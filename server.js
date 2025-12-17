@@ -14,11 +14,12 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 // アップロード先（テンポラリ）
-// ファイルサイズ制限: 100MB（Herokuのメモリ制限を考慮）
+// ファイルサイズ制限: 50MB（Herokuのメモリ制限を考慮）
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const upload = multer({ 
   dest: uploadsDir,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB
+    fileSize: MAX_FILE_SIZE
   }
 });
 
@@ -28,11 +29,11 @@ app.use(express.static(__dirname));
 // リクエストタイムアウト設定（5分）
 const REQUEST_TIMEOUT = 5 * 60 * 1000; // 5分
 
-// エラーハンドリングミドルウェア
+  // エラーハンドリングミドルウェア
 app.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ error: 'ファイルサイズが大きすぎます。100MB以下にしてください。' });
+      return res.status(400).json({ error: 'ファイルサイズが大きすぎます。50MB以下にしてください。' });
     }
     return res.status(400).json({ error: 'ファイルアップロードエラー: ' + err.message });
   }
@@ -80,16 +81,19 @@ app.post('/api/reverse', upload.single('video'), (req, res) => {
     }
   }, REQUEST_TIMEOUT - 10000); // タイムアウトの10秒前に処理
 
-  // ffmpeg コマンド: 映像と音声を逆再生（メモリ効率を改善）
+  // ffmpeg コマンド: 映像と音声を逆再生（メモリ効率を最大限に改善）
+  // 解像度を720p以下に制限、動画長を30秒に制限してメモリ使用量を削減
   const ffmpeg = spawn('ffmpeg', [
     '-y',
     '-i', inputPath,
-    '-vf', 'reverse',
+    '-t', '30', // 最大30秒まで処理（メモリ使用量を制限）
+    '-vf', 'scale=720:-2:flags=lanczos,reverse', // 解像度を720pに制限してから逆再生
     '-af', 'areverse',
-    '-threads', '2', // スレッド数を制限してメモリ使用量を抑制
+    '-threads', '1', // スレッド数を1に制限（メモリ使用量を最小化）
     '-preset', 'ultrafast', // 高速エンコード（メモリ使用量を削減）
-    '-crf', '28', // 品質を少し下げてファイルサイズとメモリ使用量を削減
+    '-crf', '30', // 品質を下げてファイルサイズとメモリ使用量を削減
     '-movflags', '+faststart', // ストリーミング最適化
+    '-max_muxing_queue_size', '1024', // キューサイズを制限
     outputPath,
   ]);
 
