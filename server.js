@@ -20,29 +20,6 @@ if (!fs.existsSync(videosDir)) {
   fs.mkdirSync(videosDir, { recursive: true });
 }
 
-// 動画ファイルの管理（ID -> ファイルパス、作成時刻）
-const videoFiles = new Map();
-
-// 動画ファイルの自動削除（1時間後）
-const VIDEO_EXPIRY_TIME = 60 * 60 * 1000; // 1時間
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, data] of videoFiles.entries()) {
-    if (now - data.createdAt > VIDEO_EXPIRY_TIME) {
-      try {
-        if (fs.existsSync(data.path)) {
-          fs.unlinkSync(data.path);
-        }
-        videoFiles.delete(id);
-        console.log(`Deleted expired video: ${id}`);
-      } catch (err) {
-        console.error(`Error deleting video ${id}:`, err);
-      }
-    }
-  }
-}, 5 * 60 * 1000); // 5分ごとにチェック
-
 // アップロード先（テンポラリ）
 // ファイルサイズ制限: 50MB（Herokuのメモリ制限を考慮）
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -59,13 +36,12 @@ app.use(express.static(__dirname));
 // 動画ファイルの配信エンドポイント（Rangeリクエスト対応）
 app.get('/api/video/:id', (req, res) => {
   const videoId = req.params.id;
-  const videoData = videoFiles.get(videoId);
+  // ID からパスを直接構成（メモリ上の管理情報に依存しない）
+  const videoPath = path.join(videosDir, `${videoId}.mp4`);
 
-  if (!videoData || !fs.existsSync(videoData.path)) {
+  if (!fs.existsSync(videoPath)) {
     return res.status(404).json({ error: '動画が見つかりません。' });
   }
-
-  const videoPath = videoData.path;
   const stat = fs.statSync(videoPath);
   const fileSize = stat.size;
   const range = req.headers.range;
@@ -205,29 +181,21 @@ app.post('/api/reverse', upload.single('video'), (req, res) => {
       return;
     }
 
-    // 一意のIDを生成
+    // 一意のIDを生成し、動画ファイルを一時保存ディレクトリにコピー
     const videoId = crypto.randomUUID();
     const savedVideoPath = path.join(videosDir, `${videoId}.mp4`);
-
-    // 動画ファイルを一時保存ディレクトリにコピー
     fs.copyFileSync(outputPath, savedVideoPath);
-
-    // 動画ファイルの情報を保存
-    videoFiles.set(videoId, {
-      path: savedVideoPath,
-      createdAt: Date.now()
-    });
 
     isResponseSent = true;
 
     // 動画のURLを返す
     const videoUrl = `/api/video/${videoId}`;
-    res.json({ 
-      videoUrl: videoUrl,
+    res.json({
+      videoUrl,
       message: '逆回転動画が生成されました。'
     });
 
-    // 入力ファイルは削除（出力ファイルは一時保存ディレクトリにコピー済み）
+    // 入力・中間ファイルは削除（最終ファイルは videosDir に保存済み）
     try {
       if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
       if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
