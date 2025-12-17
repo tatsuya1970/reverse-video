@@ -170,9 +170,9 @@
         .mobile-hint {
             background: #fff3cd;
             border: 2px solid #ffc107;
-            padding: 10px;
+            padding: 15px;
             border-radius: 8px;
-            margin-top: 10px;
+            margin-top: 15px;
             color: #856404;
             font-size: 0.9em;
             text-align: center;
@@ -181,6 +181,23 @@
 
         .mobile-hint.active {
             display: block;
+        }
+
+        #openVideoLink {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #openVideoLink:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
     </style>
 </head>
@@ -217,9 +234,12 @@
 
         <div class="video-container" id="reversedVideoContainer" style="display: none;">
             <h2 style="margin-bottom: 15px; color: #333;">逆回転動画</h2>
-            <video id="reversedVideo" controls></video>
-            <div class="mobile-hint" id="mobileHint">
-                📱 スマートフォンの場合：動画を長押しして「動画を保存」または「ビデオを保存」を選択してください
+            <video id="reversedVideo" controls controlsList="nodownload"></video>
+            <div class="mobile-hint" id="mobileHint" style="display: none;">
+                <div style="margin-bottom: 10px;">📱 スマートフォンで保存する場合：</div>
+                <a id="openVideoLink" href="#" target="_blank">
+                    ▶ 動画を新しいタブで開く（開いた動画を長押しして「動画を保存」を選択）
+                </a>
             </div>
         </div>
 

@@ -11,6 +11,7 @@ const progressContainer = document.getElementById('progressContainer');
 const progressFill = document.getElementById('progressFill');
 const status = document.getElementById('status');
 const mobileHint = document.getElementById('mobileHint');
+const openVideoLink = document.getElementById('openVideoLink');
 
 let originalVideoBlob = null;
 let reversedVideoBlob = null;
@@ -120,12 +121,14 @@ reverseBtn.addEventListener('click', async () => {
         updateProgress(100);
         status.textContent = '逆回転動画の生成が完了しました！（長さは元動画と同じです）';
         
-        // スマートフォンの場合、ヒントを表示
+        // スマートフォンの場合、動画を新しいタブで開くリンクを設定
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-            mobileHint.classList.add('active');
+            const videoUrl = URL.createObjectURL(reversedVideoBlob);
+            openVideoLink.href = videoUrl;
+            mobileHint.style.display = 'block';
         } else {
-            mobileHint.classList.remove('active');
+            mobileHint.style.display = 'none';
         }
 
     } catch (error) {
@@ -148,15 +151,16 @@ downloadBtn.addEventListener('click', () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
     if (isMobile) {
-        // スマートフォンの場合：動画を直接表示して、ユーザーが長押しで保存できるようにする
-        // 既に表示されている場合は、ヒントを強調表示
-        mobileHint.classList.add('active');
-        reversedVideoContainer.style.display = 'block';
+        // スマートフォンの場合：動画を新しいタブで開く
+        const videoUrl = URL.createObjectURL(reversedVideoBlob);
+        openVideoLink.href = videoUrl;
         
-        // 動画を自動再生して、保存しやすくする
-        reversedVideo.play().catch(() => {
-            // 自動再生が失敗した場合は無視
-        });
+        // リンクをクリックして新しいタブで開く
+        openVideoLink.click();
+        
+        // ヒントを表示
+        reversedVideoContainer.style.display = 'block';
+        mobileHint.style.display = 'block';
         
         // スクロールして動画が見えるようにする
         reversedVideoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
