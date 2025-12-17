@@ -155,8 +155,10 @@ downloadBtn.addEventListener('click', () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     
     if (isMobile) {
-        // スマートフォンの場合：動画を新しいタブで開く
-        openVideoLink.href = reversedVideoBlob;
+        // スマートフォンの場合：動画専用ページを新しいタブで開く
+        const videoId = reversedVideoBlob.split('/').pop();
+        const videoPageUrl = `/video.html?id=${videoId}`;
+        openVideoLink.href = videoPageUrl;
         
         // リンクをクリックして新しいタブで開く
         openVideoLink.click();
