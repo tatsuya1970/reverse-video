@@ -49,6 +49,13 @@ function handleFile(file) {
         return;
     }
 
+    // ファイルサイズチェック（100MB制限）
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+        alert('ファイルサイズが大きすぎます。100MB以下の動画ファイルを選択してください。');
+        return;
+    }
+
     originalVideoBlob = null;
     reversedVideoBlob = null;
     reversedVideoContainer.style.display = 'none';
@@ -86,7 +93,17 @@ reverseBtn.addEventListener('click', async () => {
         });
 
         if (!response.ok) {
-            throw new Error('サーバー側でエラーが発生しました（HTTP ' + response.status + '）');
+            // エラーレスポンスからメッセージを取得
+            let errorMessage = 'サーバー側でエラーが発生しました（HTTP ' + response.status + '）';
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch (e) {
+                // JSON解析に失敗した場合はデフォルトメッセージを使用
+            }
+            throw new Error(errorMessage);
         }
 
         updateProgress(70);
