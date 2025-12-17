@@ -123,17 +123,19 @@ reverseBtn.addEventListener('click', async () => {
         updateProgress(100);
         status.textContent = '逆回転動画の生成が完了しました！（長さは元動画と同じです）';
         
-        // スマートフォンの場合、動画を新しいタブで開くリンクを設定
+        // 動画URLを保存（ダウンロード用）
+        reversedVideoBlob = videoUrl;
+        
+        // スマートフォンの場合、動画専用ページを開くリンクを設定
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-            openVideoLink.href = videoUrl;
+            const videoId = videoUrl.split('/').pop();
+            const videoPageUrl = `/video.html?id=${videoId}`;
+            openVideoLink.href = videoPageUrl;
             mobileHint.style.display = 'block';
         } else {
             mobileHint.style.display = 'none';
         }
-        
-        // 動画URLを保存（ダウンロード用）
-        reversedVideoBlob = videoUrl;
 
     } catch (error) {
         console.error('エラーが発生しました:', error);
