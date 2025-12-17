@@ -10,9 +10,21 @@ const downloadBtn = document.getElementById('downloadBtn');
 const progressContainer = document.getElementById('progressContainer');
 const progressFill = document.getElementById('progressFill');
 const status = document.getElementById('status');
+const mobileWarning = document.getElementById('mobileWarning');
+const mobileInfoWarning = document.getElementById('mobileInfoWarning');
 
 let originalVideoBlob = null;
 let reversedVideoBlob = null;
+
+// スマートフォンの検出とUI調整
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+if (isMobile) {
+    // スマートフォンの場合、注意書きを表示
+    mobileWarning.style.display = 'block';
+    mobileInfoWarning.style.display = 'block';
+    // ダウンロードボタンを非表示
+    downloadBtn.style.display = 'none';
+}
 
 // ファイルアップロード処理
 uploadArea.addEventListener('click', () => {
