@@ -98,16 +98,30 @@
         // URLパラメータから動画IDを取得
         const urlParams = new URLSearchParams(window.location.search);
         const videoId = urlParams.get('id');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const downloadLink = document.getElementById('downloadLink');
 
         if (videoId) {
             const videoUrl = `/api/video/${videoId}`;
-            const videoPlayer = document.getElementById('videoPlayer');
-            const downloadLink = document.getElementById('downloadLink');
             
+            // 動画を設定
             videoPlayer.src = videoUrl;
+            
+            // ダウンロードリンクを設定
             downloadLink.href = videoUrl;
+            downloadLink.style.display = 'inline-block'; // 確実に表示
+            
+            // 動画の読み込みエラーを処理
+            videoPlayer.addEventListener('error', (e) => {
+                console.error('動画の読み込みエラー:', e);
+                document.querySelector('.container').innerHTML = 
+                    '<h1>エラー</h1><p>動画の読み込みに失敗しました。動画ID: ' + videoId + '</p>';
+            });
         } else {
-            document.querySelector('.container').innerHTML = '<h1>エラー</h1><p>動画IDが指定されていません。</p>';
+            // 動画IDがない場合でもダウンロードボタンは表示
+            downloadLink.style.display = 'none';
+            document.querySelector('.container').innerHTML = 
+                '<h1>エラー</h1><p>動画IDが指定されていません。</p>';
         }
     </script>
 </body>
