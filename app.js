@@ -10,8 +10,6 @@ const downloadBtn = document.getElementById('downloadBtn');
 const progressContainer = document.getElementById('progressContainer');
 const progressFill = document.getElementById('progressFill');
 const status = document.getElementById('status');
-const mobileHint = document.getElementById('mobileHint');
-const openVideoLink = document.getElementById('openVideoLink');
 
 let originalVideoBlob = null;
 let reversedVideoBlob = null;
@@ -125,17 +123,6 @@ reverseBtn.addEventListener('click', async () => {
         
         // 動画URLを保存（ダウンロード用）
         reversedVideoBlob = videoUrl;
-        
-        // スマートフォンの場合、動画専用ページを開くリンクを設定
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-            const videoId = videoUrl.split('/').pop();
-            const videoPageUrl = `/video.html?id=${videoId}`;
-            openVideoLink.href = videoPageUrl;
-            mobileHint.style.display = 'block';
-        } else {
-            mobileHint.style.display = 'none';
-        }
 
     } catch (error) {
         console.error('エラーが発生しました:', error);
@@ -146,40 +133,19 @@ reverseBtn.addEventListener('click', async () => {
     }
 });
 
-// ダウンロード処理（スマートフォン対応）
+// ダウンロード処理
 downloadBtn.addEventListener('click', () => {
     if (!reversedVideoBlob) {
         alert('逆回転動画が生成されていません。');
         return;
     }
 
-    // スマートフォンの検出
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    if (isMobile) {
-        // スマートフォンの場合：動画専用ページを新しいタブで開く
-        const videoId = reversedVideoBlob.split('/').pop();
-        const videoPageUrl = `/video.html?id=${videoId}`;
-        openVideoLink.href = videoPageUrl;
-        
-        // リンクをクリックして新しいタブで開く
-        openVideoLink.click();
-        
-        // ヒントを表示
-        reversedVideoContainer.style.display = 'block';
-        mobileHint.style.display = 'block';
-        
-        // スクロールして動画が見えるようにする
-        reversedVideoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-        // PCの場合：通常のダウンロード
-        const a = document.createElement('a');
-        a.href = reversedVideoBlob;
-        a.download = 'reversed_video.mp4';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
+    const a = document.createElement('a');
+    a.href = reversedVideoBlob;
+    a.download = 'reversed_video.mp4';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 });
 
 // プログレスバーの更新
