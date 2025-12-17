@@ -33,6 +33,33 @@ const upload = multer({
 // 静的ファイル配信（index.html, app.js など）
 app.use(express.static(__dirname));
 
+// 動画ダウンロード専用エンドポイント（スマートフォン対応）
+app.get('/api/video/:id/download', (req, res) => {
+  const videoId = req.params.id;
+  const videoPath = path.join(videosDir, `${videoId}.mp4`);
+
+  if (!fs.existsSync(videoPath)) {
+    return res.status(404).json({ error: '動画が見つかりません。' });
+  }
+
+  const stat = fs.statSync(videoPath);
+  const fileSize = stat.size;
+
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Content-Disposition', 'attachment; filename="reversed_video.mp4"');
+  res.setHeader('Content-Length', fileSize);
+  
+  const stream = fs.createReadStream(videoPath);
+  stream.pipe(res);
+
+  stream.on('error', (err) => {
+    console.error('Stream error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: '動画の配信に失敗しました。' });
+    }
+  });
+});
+
 // 動画ファイルの配信エンドポイント（Rangeリクエスト対応）
 app.get('/api/video/:id', (req, res) => {
   const videoId = req.params.id;

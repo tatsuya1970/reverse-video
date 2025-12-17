@@ -103,12 +103,38 @@
 
         if (videoId) {
             const videoUrl = `/api/video/${videoId}`;
+            const downloadUrl = `/api/video/${videoId}/download`;
             
             // 動画を設定
             videoPlayer.src = videoUrl;
             
-            // ダウンロードリンクを設定
-            downloadLink.href = videoUrl;
+            // ダウンロードリンクを設定（ダウンロード専用エンドポイントを使用）
+            downloadLink.href = downloadUrl;
+            
+            // ダウンロードボタンのクリックイベント（スマートフォン対応）
+            downloadLink.addEventListener('click', async (e) => {
+                // スマートフォンの場合、JavaScriptでダウンロードを実行
+                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                if (isMobile) {
+                    e.preventDefault();
+                    try {
+                        const response = await fetch(downloadUrl);
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'reversed_video.mp4';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                        console.error('ダウンロードエラー:', error);
+                        alert('ダウンロードに失敗しました。もう一度お試しください。');
+                    }
+                }
+                // PCの場合は通常のリンク動作（preventDefaultしない）
+            });
             
             // 動画の読み込みエラーを処理
             videoPlayer.addEventListener('error', (e) => {
