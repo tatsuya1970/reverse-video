@@ -34,6 +34,7 @@ const upload = multer({
 app.use(express.static(__dirname));
 
 // 動画ダウンロード専用エンドポイント（スマートフォン対応）
+// 注意：より具体的なルートなので、/api/video/:id より前に定義する必要がある
 app.get('/api/video/:id/download', (req, res) => {
   const videoId = req.params.id;
   const videoPath = path.join(videosDir, `${videoId}.mp4`);
