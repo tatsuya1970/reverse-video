@@ -56,7 +56,7 @@ const upload = multer({
 // 静的ファイル配信（index.html, app.js など）
 app.use(express.static(__dirname));
 
-// 動画ファイルの配信エンドポイント
+// 動画ファイルの配信エンドポイント（Rangeリクエスト対応）
 app.get('/api/video/:id', (req, res) => {
   const videoId = req.params.id;
   const videoData = videoFiles.get(videoId);
@@ -65,18 +65,39 @@ app.get('/api/video/:id', (req, res) => {
     return res.status(404).json({ error: '動画が見つかりません。' });
   }
 
-  res.setHeader('Content-Type', 'video/mp4');
-  res.setHeader('Content-Disposition', 'inline; filename="reversed_video.mp4"');
-  
-  const stream = fs.createReadStream(videoData.path);
-  stream.pipe(res);
+  const videoPath = videoData.path;
+  const stat = fs.statSync(videoPath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
 
-  stream.on('error', (err) => {
-    console.error('Stream error:', err);
-    if (!res.headersSent) {
-      res.status(500).json({ error: '動画の配信に失敗しました。' });
-    }
-  });
+  // Rangeリクエストに対応（スマートフォンでのストリーミングに必要）
+  if (range) {
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunksize = (end - start) + 1;
+    const file = fs.createReadStream(videoPath, { start, end });
+    const head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=3600',
+    };
+    res.writeHead(206, head);
+    file.pipe(res);
+  } else {
+    // Rangeリクエストがない場合は全体を返す
+    const head = {
+      'Content-Length': fileSize,
+      'Content-Type': 'video/mp4',
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=3600',
+      'Content-Disposition': 'inline; filename="reversed_video.mp4"',
+    };
+    res.writeHead(200, head);
+    fs.createReadStream(videoPath).pipe(res);
+  }
 });
 
 // リクエストタイムアウト設定（5分）
