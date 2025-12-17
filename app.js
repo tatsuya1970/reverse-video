@@ -109,11 +109,13 @@ reverseBtn.addEventListener('click', async () => {
         }
 
         updateProgress(70);
-        const blob = await response.blob();
-        reversedVideoBlob = blob;
-
-        const url = URL.createObjectURL(reversedVideoBlob);
-        reversedVideo.src = url;
+        
+        // サーバーからJSONレスポンスを取得
+        const data = await response.json();
+        const videoUrl = data.videoUrl;
+        
+        // 動画を表示
+        reversedVideo.src = videoUrl;
         reversedVideoContainer.style.display = 'block';
         downloadBtn.disabled = false;
         reverseBtn.disabled = false;
@@ -124,12 +126,14 @@ reverseBtn.addEventListener('click', async () => {
         // スマートフォンの場合、動画を新しいタブで開くリンクを設定
         const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
         if (isMobile) {
-            const videoUrl = URL.createObjectURL(reversedVideoBlob);
             openVideoLink.href = videoUrl;
             mobileHint.style.display = 'block';
         } else {
             mobileHint.style.display = 'none';
         }
+        
+        // 動画URLを保存（ダウンロード用）
+        reversedVideoBlob = videoUrl;
 
     } catch (error) {
         console.error('エラーが発生しました:', error);
@@ -152,8 +156,7 @@ downloadBtn.addEventListener('click', () => {
     
     if (isMobile) {
         // スマートフォンの場合：動画を新しいタブで開く
-        const videoUrl = URL.createObjectURL(reversedVideoBlob);
-        openVideoLink.href = videoUrl;
+        openVideoLink.href = reversedVideoBlob;
         
         // リンクをクリックして新しいタブで開く
         openVideoLink.click();
@@ -166,14 +169,12 @@ downloadBtn.addEventListener('click', () => {
         reversedVideoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
         // PCの場合：通常のダウンロード
-        const url = URL.createObjectURL(reversedVideoBlob);
         const a = document.createElement('a');
-        a.href = url;
+        a.href = reversedVideoBlob;
         a.download = 'reversed_video.mp4';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     }
 });
 

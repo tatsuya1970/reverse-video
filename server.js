@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,6 +13,35 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
+
+// 一時保存用の動画ディレクトリを作成
+const videosDir = path.join(__dirname, 'public', 'videos');
+if (!fs.existsSync(videosDir)) {
+  fs.mkdirSync(videosDir, { recursive: true });
+}
+
+// 動画ファイルの管理（ID -> ファイルパス、作成時刻）
+const videoFiles = new Map();
+
+// 動画ファイルの自動削除（1時間後）
+const VIDEO_EXPIRY_TIME = 60 * 60 * 1000; // 1時間
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, data] of videoFiles.entries()) {
+    if (now - data.createdAt > VIDEO_EXPIRY_TIME) {
+      try {
+        if (fs.existsSync(data.path)) {
+          fs.unlinkSync(data.path);
+        }
+        videoFiles.delete(id);
+        console.log(`Deleted expired video: ${id}`);
+      } catch (err) {
+        console.error(`Error deleting video ${id}:`, err);
+      }
+    }
+  }
+}, 5 * 60 * 1000); // 5分ごとにチェック
 
 // アップロード先（テンポラリ）
 // ファイルサイズ制限: 50MB（Herokuのメモリ制限を考慮）
@@ -25,6 +55,29 @@ const upload = multer({
 
 // 静的ファイル配信（index.html, app.js など）
 app.use(express.static(__dirname));
+
+// 動画ファイルの配信エンドポイント
+app.get('/api/video/:id', (req, res) => {
+  const videoId = req.params.id;
+  const videoData = videoFiles.get(videoId);
+
+  if (!videoData || !fs.existsSync(videoData.path)) {
+    return res.status(404).json({ error: '動画が見つかりません。' });
+  }
+
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Content-Disposition', 'inline; filename="reversed_video.mp4"');
+  
+  const stream = fs.createReadStream(videoData.path);
+  stream.pipe(res);
+
+  stream.on('error', (err) => {
+    console.error('Stream error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: '動画の配信に失敗しました。' });
+    }
+  });
+});
 
 // リクエストタイムアウト設定（5分）
 const REQUEST_TIMEOUT = 5 * 60 * 1000; // 5分
@@ -131,30 +184,35 @@ app.post('/api/reverse', upload.single('video'), (req, res) => {
       return;
     }
 
+    // 一意のIDを生成
+    const videoId = crypto.randomUUID();
+    const savedVideoPath = path.join(videosDir, `${videoId}.mp4`);
+
+    // 動画ファイルを一時保存ディレクトリにコピー
+    fs.copyFileSync(outputPath, savedVideoPath);
+
+    // 動画ファイルの情報を保存
+    videoFiles.set(videoId, {
+      path: savedVideoPath,
+      createdAt: Date.now()
+    });
+
     isResponseSent = true;
 
-    // 生成されたファイルを返す
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', 'attachment; filename="reversed_video.mp4"');
-
-    const stream = fs.createReadStream(outputPath);
-    stream.pipe(res);
-
-    stream.on('error', (err) => {
-      console.error('Stream error:', err);
-      cleanup();
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'ファイルの送信に失敗しました。' });
-      }
+    // 動画のURLを返す
+    const videoUrl = `/api/video/${videoId}`;
+    res.json({ 
+      videoUrl: videoUrl,
+      message: '逆回転動画が生成されました。'
     });
 
-    stream.on('close', () => {
-      cleanup();
-    });
-
-    res.on('close', () => {
-      cleanup();
-    });
+    // 入力ファイルは削除（出力ファイルは一時保存ディレクトリにコピー済み）
+    try {
+      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+    } catch (err) {
+      console.error('Cleanup error:', err);
+    }
   });
 });
 
