@@ -109,19 +109,25 @@
             
             // ダウンロードリンクを設定
             downloadLink.href = videoUrl;
-            downloadLink.style.display = 'inline-block'; // 確実に表示
             
             // 動画の読み込みエラーを処理
             videoPlayer.addEventListener('error', (e) => {
                 console.error('動画の読み込みエラー:', e);
-                document.querySelector('.container').innerHTML = 
-                    '<h1>エラー</h1><p>動画の読み込みに失敗しました。動画ID: ' + videoId + '</p>';
+                const errorMsg = document.createElement('p');
+                errorMsg.style.color = 'red';
+                errorMsg.style.marginTop = '20px';
+                errorMsg.textContent = '動画の読み込みに失敗しました。動画ID: ' + videoId;
+                document.querySelector('.container').appendChild(errorMsg);
             });
         } else {
-            // 動画IDがない場合でもダウンロードボタンは表示
+            // 動画IDがない場合
+            videoPlayer.style.display = 'none';
             downloadLink.style.display = 'none';
-            document.querySelector('.container').innerHTML = 
-                '<h1>エラー</h1><p>動画IDが指定されていません。</p>';
+            const errorMsg = document.createElement('p');
+            errorMsg.style.color = 'red';
+            errorMsg.style.marginTop = '20px';
+            errorMsg.textContent = '動画IDが指定されていません。';
+            document.querySelector('.container').appendChild(errorMsg);
         }
     </script>
 </body>
