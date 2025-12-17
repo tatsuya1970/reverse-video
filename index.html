@@ -166,6 +166,22 @@
             color: #555;
             line-height: 1.6;
         }
+
+        .mobile-hint {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            color: #856404;
+            font-size: 0.9em;
+            text-align: center;
+            display: none;
+        }
+
+        .mobile-hint.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -176,6 +192,9 @@
             <div class="upload-icon">📁</div>
             <div class="upload-text">動画ファイルをドラッグ&ドロップ</div>
             <div class="upload-text" style="font-size: 0.9em; color: #999;">またはクリックしてファイルを選択</div>
+            <div class="upload-text" style="font-size: 0.85em; color: #ff6b6b; margin-top: 15px; font-weight: bold;">
+                ⚠️ 注意：50MB以下、最大30秒まで。動画は自動的に720pにリサイズされます。
+            </div>
             <input type="file" id="fileInput" class="file-input" accept="video/*">
         </div>
 
@@ -199,14 +218,17 @@
         <div class="video-container" id="reversedVideoContainer" style="display: none;">
             <h2 style="margin-bottom: 15px; color: #333;">逆回転動画</h2>
             <video id="reversedVideo" controls></video>
+            <div class="mobile-hint" id="mobileHint">
+                📱 スマートフォンの場合：動画を長押しして「動画を保存」または「ビデオを保存」を選択してください
+            </div>
         </div>
 
         <div class="info">
             <strong>使い方：</strong><br>
-            1. 動画ファイルをアップロードします（50MB以下、最大30秒）<br>
+            1. 動画ファイルをアップロードします<br>
             2. 「逆回転動画を生成」ボタンをクリックします<br>
-            3. 処理が完了したら、「逆回転動画をダウンロード」ボタンで保存できます<br><br>
-            <strong>注意：</strong>大きな動画や長時間の動画はメモリ制限により処理できない場合があります。動画は自動的に720pにリサイズされます。
+            3. 処理が完了したら、「逆回転動画をダウンロード」ボタンで保存できます<br>
+            4. スマートフォンの場合、動画を長押しして「動画を保存」を選択してください
         </div>
     </div>
 

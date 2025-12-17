@@ -10,6 +10,7 @@ const downloadBtn = document.getElementById('downloadBtn');
 const progressContainer = document.getElementById('progressContainer');
 const progressFill = document.getElementById('progressFill');
 const status = document.getElementById('status');
+const mobileHint = document.getElementById('mobileHint');
 
 let originalVideoBlob = null;
 let reversedVideoBlob = null;
@@ -118,6 +119,14 @@ reverseBtn.addEventListener('click', async () => {
         progressContainer.classList.remove('active');
         updateProgress(100);
         status.textContent = '逆回転動画の生成が完了しました！（長さは元動画と同じです）';
+        
+        // スマートフォンの場合、ヒントを表示
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            mobileHint.classList.add('active');
+        } else {
+            mobileHint.classList.remove('active');
+        }
 
     } catch (error) {
         console.error('エラーが発生しました:', error);
@@ -128,21 +137,40 @@ reverseBtn.addEventListener('click', async () => {
     }
 });
 
-// ダウンロード処理
+// ダウンロード処理（スマートフォン対応）
 downloadBtn.addEventListener('click', () => {
     if (!reversedVideoBlob) {
         alert('逆回転動画が生成されていません。');
         return;
     }
 
-    const url = URL.createObjectURL(reversedVideoBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'reversed_video.webm';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // スマートフォンの検出
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // スマートフォンの場合：動画を直接表示して、ユーザーが長押しで保存できるようにする
+        // 既に表示されている場合は、ヒントを強調表示
+        mobileHint.classList.add('active');
+        reversedVideoContainer.style.display = 'block';
+        
+        // 動画を自動再生して、保存しやすくする
+        reversedVideo.play().catch(() => {
+            // 自動再生が失敗した場合は無視
+        });
+        
+        // スクロールして動画が見えるようにする
+        reversedVideoContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        // PCの場合：通常のダウンロード
+        const url = URL.createObjectURL(reversedVideoBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'reversed_video.mp4';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
 });
 
 // プログレスバーの更新
